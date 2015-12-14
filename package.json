@@ -1,0 +1,26 @@
+{
+  "name": "rpi_putio",
+  "version": "0.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "/node_modules/bin/.mocha test/**/*.js"
+  },
+  "keywords": [
+    "raspberrypi",
+    "putio"
+  ],
+  "author": "Alexandru Savin",
+  "license": "ISC",
+  "dependencies": {
+    "bunyan": "^1.5.1",
+    "co": "^4.6.0",
+    "lodash": "^3.10.1",
+    "request": "^2.67.0"
+  },
+  "devDependencies": {
+    "chai": "^3.4.1",
+    "mocha": "^2.3.4",
+    "nock": "^3.4.0"
+  }
+}
