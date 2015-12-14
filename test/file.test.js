@@ -2,24 +2,31 @@
 
 const expect = require('chai').expect;
 
-const mockAPI = require('./fixtures/mocks');
+const mockRequest = require('./fixtures/mocks').mockFile;
 
-const Client = require('../lib/putio').Client;
+const Client = require('../lib/Client');
 
 
 describe('File list', function () {
 
     beforeEach(function() {
-        mockAPI.fileList(200, {
+        const fixture = require('./fixtures/filesList.json');
+        mockRequest.list(200, fixture, 0);
+        mockRequest.getDummy(200, {});
 
-        });
-
-        this.client = new Client('');
-        this.fileAPI = this.client.file;
+        this.client = new Client('Oauth');
+        this.expectedResult = fixture.files;
     });
 
-    it('should load file list', function() {
-        expect();
+    xit('should call with OAuth token', done => {
+        this.client.request('/dummy');
+    });
+
+    it('should load file list', done => {
+        this.client.file.list({parent_id: 0}, (err, result) => {
+            expect(result).to.deep.equal(this.expectedResult);
+            done();
+        });
     });
 
 });
