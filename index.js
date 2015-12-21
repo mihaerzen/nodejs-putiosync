@@ -59,7 +59,7 @@ const worker = (task, cb) => {
 
                 download.on('finish', cb);
             } else {
-                log.info('File exists [%s]', task.file.name);
+                log.info('File exists. Skipping [%s]', task.file.name);
                 cb();
             }
         });
