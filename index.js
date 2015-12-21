@@ -73,27 +73,26 @@ const done = (err, results) => {
         throw err;
     }
 
+    if(err) {
+        throw err;
+    }
+
     log.info('Sync job triggered');
 
     if(_.isArray(results) && results.length > 0) {
         results.forEach((res) => q.push(res));
+        q.process();
+    } else {
+        log.info('Nothing new ... waiting 3 sec before trying again.');
+        setTimeout(()=>fetchList({id: 326259327}, 'test', done), 3000);
     }
 };
 
-q.drain = () => {
-    setInterval(fetchList({id: 326259327}, 'test', (err, results) => {
-        if(err) {
-            throw err;
-        }
+q.drain = ()=>setTimeout(()=>fetchList({id: 326259327}, 'test', done), 3000);
 
-        done(err, results);
-        q.process();
-    }), 3000);
-};
+//fetchList({id: 285681349}, 'TV', done);
 
-fetchList({id: 285681349}, 'TV', done);
-
-//fetchList({id: 326259327}, 'test', done);
+fetchList({id: 326259327}, 'test', done);
 
 //client.file.get({file_id: 315148010}, (err, result) => {
 //    if(err) {
