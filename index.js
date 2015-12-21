@@ -71,7 +71,7 @@ const worker = (task, cb) => {
                 const downloadProgress = new DownloadProgress(task.file);
 
                 const download = client.file.download({file_id: task.file.id})
-                    //.pipe(downloadProgress.progressStream)
+                    .pipe(downloadProgress.progressStream)
                     .pipe(fs.createWriteStream(downloadLocation));
 
                 download.on('finish', cb);
