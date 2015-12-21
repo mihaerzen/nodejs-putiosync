@@ -4,7 +4,14 @@ const fs = require('fs');
 const mkdirp = require('mkdirp');
 const async = require('async');
 const _ = require('lodash');
-const mtd = require('mt-downloader');
+const program = require('commander');
+
+program.version('0.0.0')
+    .option('-s, --source <n>', 'Source folder ID.')
+    .option('-d, --destination <string>', 'Destination directory')
+    .parse(process.argv);
+
+
 
 const log = require('./util/log');
 const Client = require('./lib/Client');
@@ -15,10 +22,20 @@ const client = new Client("ECGUYX6W");
 function fetchList(folder, root, done) {
     let filesToDownload = [];
     client.file.list({parent_id: folder.id}, function(err, results) {
+        if(typeof root === 'function') {
+            done = root;
+        }
+
         if(err) done(err);
+
         let pending = results.files.length;
+
         if(!pending) {
             done();
+        }
+
+        if(!_.isString(root)) {
+            root = results.parent.name;
         }
 
         results.files.forEach((file) => {
@@ -42,12 +59,12 @@ function fetchList(folder, root, done) {
 }
 
 const worker = (task, cb) => {
-    const saveDir = './tmp/' + task.path + '/';
+    const saveDir = program.destination + '/' + task.path;
 
     mkdirp(saveDir, function(err) {
         if(err) throw err;
 
-        const downloadLocation = saveDir + task.file.name;
+        const downloadLocation = saveDir + '/' + task.file.name;
 
         fs.stat(downloadLocation, function(err, stat) {
             if((err && err.code === 'ENOENT') || stat.size !== task.file.size) {
@@ -84,25 +101,10 @@ const done = (err, results) => {
         q.process();
     } else {
         log.info('Nothing new ... waiting 3 sec before trying again.');
-        setTimeout(()=>fetchList({id: 326259327}, 'test', done), 3000);
+        setTimeout(()=>fetchList({id: program.source}, done), 3000);
     }
 };
 
-q.drain = ()=>setTimeout(()=>fetchList({id: 326259327}, 'test', done), 3000);
+q.drain = ()=>setTimeout(()=>fetchList({id: program.source}, done), 3000);
 
-//fetchList({id: 285681349}, 'TV', done);
-
-fetchList({id: 326259327}, 'test', done);
-
-//client.file.get({file_id: 315148010}, (err, result) => {
-//    if(err) {
-//        throw err;
-//    }
-//    log.info("Downloading file %s", result.file.name, result);
-//
-//    const downloadProgress = new DownloadProgress(result.file);
-//
-//    client.file.download({file_id: result.file.id})
-//        .pipe(downloadProgress.progressStream)
-//        .pipe(fs.createWriteStream('./' + result.file.name));
-//});
+fetchList({id: program.source}, done);
