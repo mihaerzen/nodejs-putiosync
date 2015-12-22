@@ -29,9 +29,9 @@ const server = http.createServer(function(request, response) {
 
     downloads.forEach((download) => {
         results += '# ' + path.basename(download.filePath) + ' - ' +
-            Downloader.Formatters.speed(download.stats.present.speed) + ' - ' +
-            download.stats.total.completed + '% - ' +
-            Downloader.Formatters.remainingTime(download.stats.future.eta) + '\n';
+            'Speed: ' + Downloader.Formatters.speed(download.stats.present.speed) + ' - ' +
+            'Done: ' + download.stats.total.completed + '% - ' +
+            'ETA ' + Downloader.Formatters.remainingTime(download.stats.future.eta) + '\n';
     });
 
     response.end(results);
