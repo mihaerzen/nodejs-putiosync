@@ -5,12 +5,15 @@ const mkdirp = require('mkdirp');
 const async = require('async');
 const _ = require('lodash');
 const program = require('commander');
+const recursive = require('recursive-readdir');
+const path = require('path');
 const Downloader = require('mt-files-downloader');
 const downloader = new Downloader();
 
 program.version('0.0.0')
     .option('-s, --source <n>', 'Source folder ID.')
     .option('-d, --destination <string>', 'Destination directory')
+    .option('-D, --delete', 'Delete file not found in put.io')
     .parse(process.argv);
 
 
@@ -45,7 +48,7 @@ function fetchList(folder, root, done) {
                     if(err) done(err);
                     filesToDownload = filesToDownload.concat(res);
                     if (!--pending)
-                        done(null, filesToDownload);
+                        done(null, filesToDownload, root);
                 });
             } else {
                 filesToDownload.push({
@@ -53,7 +56,7 @@ function fetchList(folder, root, done) {
                     path: root
                 });
                 if (!--pending)
-                    done(null, filesToDownload);
+                    done(null, filesToDownload, root);
             }
         });
     });
@@ -137,4 +140,25 @@ const done = (err, results) => {
 
 q.drain = ()=>setTimeout(()=>fetchList({id: program.source}, done), 3000);
 
-fetchList({id: program.source}, done);
+fetchList({id: program.source}, (err, results, root) => {
+    if(program.delete === true) {
+        const rootDir = path.join(program.destination, root);
+
+        recursive(rootDir, ['*.mtd'], function(err, files) {
+            files.map((file) => {
+                let basename = path.basename(file);
+
+                let isThere = _.result(_.find(results, (res) => {
+                    return res.file.name === basename;
+                }), 'file.name');
+
+                if(!isThere) {
+                    log.warn('File removed from remote [%s] will be removed also locally!', file);
+                    fs.unlink(file);
+                }
+            });
+        });
+    }
+
+    done(err, results);
+});
