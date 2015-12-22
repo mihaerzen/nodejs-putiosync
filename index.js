@@ -5,6 +5,8 @@ const mkdirp = require('mkdirp');
 const async = require('async');
 const _ = require('lodash');
 const program = require('commander');
+const Downloader = require('mt-files-downloader');
+const downloader = new Downloader();
 
 program.version('0.0.0')
     .option('-s, --source <n>', 'Source folder ID.')
@@ -15,7 +17,6 @@ program.version('0.0.0')
 
 const log = require('./util/log');
 const Client = require('./lib/Client');
-const DownloadProgress = require('./lib/DownloadProgress');
 
 const client = new Client("ECGUYX6W");
 
@@ -64,17 +65,46 @@ const worker = (task, cb) => {
     mkdirp(saveDir, function(err) {
         if(err) throw err;
 
-        const downloadLocation = saveDir + '/' + task.file.name;
+        const destination = saveDir + '/' + task.file.name;
 
-        fs.stat(downloadLocation, function(err, stat) {
+        fs.stat(destination, function(err, stat) {
             if((err && err.code === 'ENOENT') || stat.size !== task.file.size) {
-                const downloadProgress = new DownloadProgress(task.file);
+                const download = client.file.download({file_id: task.file.id});
 
-                const download = client.file.download({file_id: task.file.id})
-                    .pipe(downloadProgress.progressStream)
-                    .pipe(fs.createWriteStream(downloadLocation));
+                download.on('response', (res) => {
+                    if(res.statusCode === 302) {
+                        const source = _.get(res, 'headers.location');
+                        
+                        if(source) {
+                            const downloadOptions = {
+                                threadsCount: 5
+                            };
 
-                download.on('finish', cb);
+                            const download = downloader.download(source, destination, downloadOptions);
+
+                            download.on('end', cb);
+                            download.setOptions(downloadOptions);
+
+                            let timer = setInterval(()=>{
+                                if(download.status === 1) {
+                                    let stats = download.getStats();
+
+                                    log.info(_.trunc(task.file.name, 50) + ' %s %s\% ETA: %s',
+                                        Downloader.Formatters.speed(stats.present.speed),
+                                        stats.total.completed,
+                                        Downloader.Formatters.remainingTime(stats.future.eta));
+                                } else if (download.status === -1 ||
+                                    download.status === 3 ||
+                                    download.status === -3) {
+
+                                    clearInterval(timer);
+                                }
+                            }, 3000);
+
+                            download.start();
+                        }
+                    }
+                });
             } else {
                 log.info('File exists. Skipping [%s]', task.file.name);
                 cb();
