@@ -69,6 +69,16 @@ const worker = (task, cb) => {
         if(err) throw err;
 
         const destination = saveDir + '/' + task.file.name;
+        const destinationResume = destination + '.mtd';
+
+        let resume = false;
+
+        try {
+            resume = fs.statSync(destinationResume);
+        } catch(err) {
+            //nothing to do
+        }
+
 
         fs.stat(destination, function(err, stat) {
             if((err && err.code === 'ENOENT') || stat.size !== task.file.size) {
@@ -83,7 +93,14 @@ const worker = (task, cb) => {
                                 threadsCount: 5
                             };
 
-                            const download = downloader.download(source, destination, downloadOptions);
+                            let download;
+
+                            if(resume) {
+                                log.info('Resuming [%s]...', _.trunc(task.file.name, 50));
+                                download = downloader.resumeDownload(destinationResume, downloadOptions);
+                            } else {
+                                download = downloader.download(source, destination, downloadOptions);
+                            }
 
                             download.on('end', cb);
                             download.setOptions(downloadOptions);
