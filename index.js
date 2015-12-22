@@ -7,6 +7,7 @@ const _ = require('lodash');
 const program = require('commander');
 const recursive = require('recursive-readdir');
 const path = require('path');
+const http = require('http');
 const Downloader = require('mt-files-downloader');
 const downloader = new Downloader();
 
@@ -16,12 +17,30 @@ program.version('0.0.0')
     .option('-D, --delete', 'Delete file not found in put.io')
     .parse(process.argv);
 
-
-
 const log = require('./util/log');
 const Client = require('./lib/Client');
 
 const client = new Client("ECGUYX6W");
+
+const server = http.createServer(function(request, response) {
+    let downloads = downloader.getDownloads();
+
+    let results = '';
+
+    downloads.forEach((download) => {
+        results += '# ' + path.basename(download.filePath) + ' - ' +
+            Downloader.Formatters.speed(download.stats.present.speed) + ' - ' +
+            download.stats.total.completed + '% - ' +
+            Downloader.Formatters.remainingTime(download.stats.future.eta) + '\n';
+    });
+
+    response.end(results);
+});
+
+server.listen(3000, function(){
+    //Callback triggered when server is successfully listening. Hurray!
+    log.warn("Server listening on: http://localhost:%s", 3000);
+});
 
 function fetchList(folder, root, done) {
     let filesToDownload = [];
