@@ -189,7 +189,13 @@ fetchList({id: program.source}, (err, results, root) => {
                 let basename = path.basename(file);
 
                 let isThere = _.result(_.find(results, (res) => {
-                    return res.file.name === basename;
+                    try {
+                        return res.file.name === basename;
+                    } catch (e) {
+                        log.error('error while removing', res, basename);
+                        throw e;
+                    }
+
                 }), 'file.name');
 
                 if(!isThere) {
