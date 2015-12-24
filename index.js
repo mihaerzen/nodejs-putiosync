@@ -12,6 +12,7 @@ const Downloader = require('mt-files-downloader');
 const downloader = new Downloader();
 
 program.version('0.0.0')
+    .option('--token <string>', 'Put.io token')
     .option('-s, --source <n>', 'Source folder ID.')
     .option('-d, --destination <string>', 'Destination directory')
     .option('-D, --delete', 'Delete file not found in put.io')
@@ -20,7 +21,7 @@ program.version('0.0.0')
 const log = require('./util/log');
 const Client = require('./lib/Client');
 
-const client = new Client("ECGUYX6W");
+const client = new Client(program.token);
 
 const server = http.createServer(function(request, response) {
     let downloads = downloader.getDownloads();
