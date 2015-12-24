@@ -82,6 +82,10 @@ function fetchList(folder, root, done) {
 }
 
 const worker = (task, cb) => {
+    if(!task) {
+        return cb();
+    }
+
     const saveDir = program.destination + '/' + task.path;
 
     mkdirp(saveDir, function(err) {
