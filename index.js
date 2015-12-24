@@ -192,7 +192,7 @@ fetchList({id: program.source}, (err, results, root) => {
                     try {
                         return res.file.name === basename;
                     } catch (e) {
-                        log.error('error while removing', res, basename);
+                        log.error('error while removing', res, results, basename);
                         throw e;
                     }
 
