@@ -197,7 +197,7 @@ const done = (err, results, root) => {
 
     if(program.delete === true) {
         log.info(`Looking for obsolete files in ${root}.`);
-        const cleanIn = program.destination + '/' + task.path;
+        const cleanIn = program.destination + '/' + root;
         remove(results, cleanIn);
     }
 
