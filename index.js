@@ -163,6 +163,7 @@ const remove = (results, root) => {
     const rootDir = path.join(program.destination, root);
 
     recursive(rootDir, ['*.mtd'], function(err, files) {
+        log.warn('searching through %d files for obsolete ones', files.length);
         if(_.isArray(files) && files.length > 0) {
             files.map((file) => {
                 let basename = path.basename(file);
