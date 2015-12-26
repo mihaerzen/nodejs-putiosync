@@ -163,24 +163,26 @@ const remove = (results, root) => {
     const rootDir = path.join(program.destination, root);
 
     recursive(rootDir, ['*.mtd'], function(err, files) {
-        files.map((file) => {
-            let basename = path.basename(file);
+        if(_.isArray(files) && files.length > 0) {
+            files.map((file) => {
+                let basename = path.basename(file);
 
-            let isThere = _.result(_.find(results, (res) => {
-                try {
-                    return res.file.name === basename;
-                } catch (e) {
-                    log.error('error while removing', res, results, basename);
-                    throw e;
+                let isThere = _.result(_.find(results, (res) => {
+                    try {
+                        return res.file.name === basename;
+                    } catch (e) {
+                        log.error('error while removing', res, results, basename);
+                        throw e;
+                    }
+
+                }), 'file.name');
+
+                if(!isThere) {
+                    log.warn('File removed from remote [%s] will be removed also locally!', file);
+                    fs.unlink(file);
                 }
-
-            }), 'file.name');
-
-            if(!isThere) {
-                log.warn('File removed from remote [%s] will be removed also locally!', file);
-                fs.unlink(file);
-            }
-        });
+            });
+        }
     });
 };
 
