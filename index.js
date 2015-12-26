@@ -162,8 +162,9 @@ const q = async.queue(worker, 1);
 const remove = (results, root) => {
     const rootDir = path.join(program.destination, root);
 
+    log.warn('searching for obsolete files in %s', rootDir);
+
     recursive(rootDir, ['*.mtd'], function(err, files) {
-        log.warn('searching through %d files for obsolete ones', files.length);
         if(_.isArray(files) && files.length > 0) {
             files.map((file) => {
                 let basename = path.basename(file);
@@ -199,9 +200,7 @@ const done = (err, results, root) => {
     log.info('Sync job triggered');
 
     if(program.delete === true) {
-        const cleanIn = program.destination + '/' + root;
-        log.info(`Looking for obsolete files in ${cleanIn}.`);
-        remove(results, cleanIn);
+        remove(results, root);
     }
 
     if(_.isArray(results) && results.length > 0) {
