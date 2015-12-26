@@ -159,7 +159,32 @@ const worker = (task, cb) => {
 
 const q = async.queue(worker, 1);
 
-const done = (err, results) => {
+const remove = (results, root) => {
+    const rootDir = path.join(program.destination, root);
+
+    recursive(rootDir, ['*.mtd'], function(err, files) {
+        files.map((file) => {
+            let basename = path.basename(file);
+
+            let isThere = _.result(_.find(results, (res) => {
+                try {
+                    return res.file.name === basename;
+                } catch (e) {
+                    log.error('error while removing', res, results, basename);
+                    throw e;
+                }
+
+            }), 'file.name');
+
+            if(!isThere) {
+                log.warn('File removed from remote [%s] will be removed also locally!', file);
+                fs.unlink(file);
+            }
+        });
+    });
+};
+
+const done = (err, results, root) => {
     if(err) {
         throw err;
     }
@@ -169,6 +194,11 @@ const done = (err, results) => {
     }
 
     log.info('Sync job triggered');
+
+    if(program.delete === true) {
+        log.info('Looking for obsolete files.');
+        remove(results, root);
+    }
 
     if(_.isArray(results) && results.length > 0) {
         results.forEach((res) => q.push(res));
@@ -182,30 +212,5 @@ const done = (err, results) => {
 q.drain = ()=>setTimeout(()=>fetchList({id: program.source}, done), 3000);
 
 fetchList({id: program.source}, (err, results, root) => {
-    if(program.delete === true) {
-        const rootDir = path.join(program.destination, root);
-
-        recursive(rootDir, ['*.mtd'], function(err, files) {
-            files.map((file) => {
-                let basename = path.basename(file);
-
-                let isThere = _.result(_.find(results, (res) => {
-                    try {
-                        return res.file.name === basename;
-                    } catch (e) {
-                        log.error('error while removing', res, results, basename);
-                        throw e;
-                    }
-
-                }), 'file.name');
-
-                if(!isThere) {
-                    log.warn('File removed from remote [%s] will be removed also locally!', file);
-                    fs.unlink(file);
-                }
-            });
-        });
-    }
-
-    done(err, results);
+    done(err, results, root);
 });
