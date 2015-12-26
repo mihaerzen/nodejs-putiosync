@@ -198,8 +198,8 @@ const done = (err, results, root) => {
     log.info('Sync job triggered');
 
     if(program.delete === true) {
-        log.info(`Looking for obsolete files in ${root}.`);
         const cleanIn = program.destination + '/' + root;
+        log.info(`Looking for obsolete files in ${cleanIn}.`);
         remove(results, cleanIn);
     }
 
