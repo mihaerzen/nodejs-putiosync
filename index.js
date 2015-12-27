@@ -1,13 +1,11 @@
 'use strict';
 
-const fs = require('fs');
-const mkdirp = require('mkdirp');
-const async = require('async');
 const _ = require('lodash');
+const fs = require('fs');
+const async = require('async');
 const program = require('commander');
 const recursive = require('recursive-readdir');
 const path = require('path');
-const http = require('http');
 const Downloader = require('mt-files-downloader');
 const downloader = new Downloader();
 
@@ -19,144 +17,20 @@ program.version('0.0.0')
     .parse(process.argv);
 
 const log = require('./util/log');
-const Client = require('./lib/Client');
 
+const Client = require('putiosdk');
 const client = new Client(program.token);
 
-const server = http.createServer(function(request, response) {
-    let downloads = downloader.getDownloads();
-
-    let results = '';
-
-    downloads.forEach((download) => {
-        results += '# ' + path.basename(download.filePath) + ' - ' +
-            'Speed: ' + Downloader.Formatters.speed(download.stats.present.speed) + ' - ' +
-            'Done: ' + download.stats.total.completed + '% - ' +
-            'ETA ' + Downloader.Formatters.remainingTime(download.stats.future.eta) + '\n';
-    });
-
-    response.end(results);
-});
-
-server.listen(3000, function(){
-    //Callback triggered when server is successfully listening. Hurray!
-    log.warn("Server listening on: http://localhost:%s", 3000);
-});
-
-function fetchList(folder, root, done) {
-    let filesToDownload = [];
-    client.file.list({parent_id: folder.id}, function(err, results) {
-        if(typeof root === 'function') {
-            done = root;
-        }
-
-        if(err) done(err);
-
-        let pending = results.files.length;
-
-        if(!pending) {
-            done();
-        }
-
-        if(!_.isString(root)) {
-            root = results.parent.name;
-        }
-
-        results.files.forEach((file) => {
-            if(file.content_type === 'application/x-directory') {
-                fetchList(file, root + '/' + file.name, function(err, res) {
-                    if(err) done(err);
-                    filesToDownload = filesToDownload.concat(res);
-                    if (!--pending)
-                        done(null, filesToDownload, root);
-                });
-            } else {
-                filesToDownload.push({
-                    file: file,
-                    path: root
-                });
-                if (!--pending)
-                    done(null, filesToDownload, root);
-            }
-        });
-    });
-}
-
-const worker = (task, cb) => {
-    if(!task) {
-        return cb();
-    }
-
-    const saveDir = program.destination + '/' + task.path;
-
-    mkdirp(saveDir, function(err) {
-        if(err) throw err;
-
-        const destination = saveDir + '/' + task.file.name;
-        const destinationResume = destination + '.mtd';
-
-        let resume = false;
-
-        try {
-            resume = fs.statSync(destinationResume);
-        } catch(err) {
-            //nothing to do
-        }
+// Start the http server
+const startServer = require('./util/httpServer')(downloader);
 
 
-        fs.stat(destination, function(err, stat) {
-            if((err && err.code === 'ENOENT') || stat.size !== task.file.size) {
-                const download = client.file.download({file_id: task.file.id});
+const fetchList = require('./util/fetchList');
 
-                download.on('response', (res) => {
-                    if(res.statusCode === 302) {
-                        const source = _.get(res, 'headers.location');
-                        
-                        if(source) {
-                            const downloadOptions = {
-                                threadsCount: 5
-                            };
+// Init the worker function
+const worker = require('./util/syncWorker')(client, program.destination, downloader);
 
-                            let download;
-
-                            if(resume) {
-                                log.info('Resuming [%s]...', _.trunc(task.file.name, 50));
-                                download = downloader.resumeDownload(destinationResume, downloadOptions);
-                            } else {
-                                download = downloader.download(source, destination, downloadOptions);
-                            }
-
-                            download.on('end', cb);
-                            download.setOptions(downloadOptions);
-
-                            let timer = setInterval(()=>{
-                                if(download.status === 1) {
-                                    let stats = download.getStats();
-
-                                    log.info(_.trunc(task.file.name, 50) + ' %s %s\% ETA: %s',
-                                        Downloader.Formatters.speed(stats.present.speed),
-                                        stats.total.completed,
-                                        Downloader.Formatters.remainingTime(stats.future.eta));
-                                } else if (download.status === -1 ||
-                                    download.status === 3 ||
-                                    download.status === -3) {
-
-                                    clearInterval(timer);
-                                }
-                            }, 3000);
-
-                            download.start();
-                        }
-                    }
-                });
-            } else {
-                log.info('File exists. Skipping [%s]', task.file.name);
-                cb();
-            }
-        });
-    });
-};
-
+// Create an async queue
 const q = async.queue(worker, 1);
 
 const remove = (results, root) => {
@@ -167,13 +41,13 @@ const remove = (results, root) => {
     recursive(rootDir, ['*.mtd'], function(err, files) {
         if(_.isArray(files) && files.length > 0) {
             files.map((file) => {
-                let basename = path.basename(file);
+                let filePath = file.replace(program.destination, '');
 
                 let isThere = _.result(_.find(results, (res) => {
                     try {
-                        return res.file.name === basename;
+                        return path.join(res.path, res.file.name) === filePath;
                     } catch (e) {
-                        log.error('error while removing', res, results, basename);
+                        log.error('error while removing', res, results, filePath);
                         throw e;
                     }
 
@@ -208,12 +82,15 @@ const done = (err, results, root) => {
         q.process();
     } else {
         log.info('Nothing new ... waiting 3 sec before trying again.');
-        setTimeout(()=>fetchList({id: program.source}, done), 3000);
+        setTimeout(()=>fetchList(client, {id: program.source}, done), 3000);
     }
 };
 
-q.drain = ()=>setTimeout(()=>fetchList({id: program.source}, done), 3000);
+q.drain = ()=>setTimeout(
+    ()=>fetchList(client, {id: program.source}, done),
+    3000);
 
-fetchList({id: program.source}, (err, results, root) => {
+fetchList(client, {id: program.source}, (err, results, root) => {
     done(err, results, root);
+    startServer();
 });

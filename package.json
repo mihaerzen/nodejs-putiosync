@@ -23,6 +23,7 @@
     "named-routes": "^2.0.2",
     "progress": "^1.1.8",
     "progress-stream": "^1.2.0",
+    "putiosdk": "0.0.1",
     "recursive-readdir": "^1.3.0",
     "request": "^2.67.0"
   },
