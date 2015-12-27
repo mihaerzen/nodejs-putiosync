@@ -41,7 +41,7 @@ const remove = (results, root) => {
     recursive(rootDir, ['*.mtd'], function(err, files) {
         if(_.isArray(files) && files.length > 0) {
             files.map((file) => {
-                let filePath = file.replace(program.destination, '');
+                let filePath = path.relative(program.destination, file);
 
                 let isThere = _.result(_.find(results, (res) => {
                     try {
