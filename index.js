@@ -14,6 +14,7 @@ program.version('0.0.0')
     .option('-s, --source <n>', 'Source folder ID.')
     .option('-d, --destination <string>', 'Destination directory')
     .option('-D, --delete', 'Delete file not found in put.io')
+    .option('-p, --port [n]', 'Port to listen for http requests')
     .parse(process.argv);
 
 const log = require('./util/log');
@@ -22,7 +23,7 @@ const Client = require('putiosdk');
 const client = new Client(program.token);
 
 // Start the http server
-const startServer = require('./util/httpServer')(downloader);
+const startServer = require('./util/httpServer')(downloader, program.port || 3000);
 
 
 const fetchList = require('./util/fetchList');

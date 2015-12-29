@@ -6,7 +6,7 @@ const Downloader = require('mt-files-downloader');
 
 const log = require('./log');
 
-module.exports = function(downloader) {
+module.exports = function(downloader, port) {
 
     const server = http.createServer(function(request, response) {
         let downloads = downloader.getDownloads();
@@ -24,9 +24,9 @@ module.exports = function(downloader) {
     });
 
     return () => {
-        return server.listen(3000, function(){
+        return server.listen(port, function(){
             //Callback triggered when server is successfully listening. Hurray!
-            log.warn("Server listening on: http://localhost:%s", 3000);
+            log.warn("Server listening on: http://localhost:%s", port);
         });
     };
 
