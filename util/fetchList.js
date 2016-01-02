@@ -9,12 +9,14 @@ module.exports = function fetchList (client, folder, root, done) {
             done = root;
         }
 
-        if(err) done(err);
+        if(err) {
+            return done(err);
+        }
 
-        let pending = results.files.length;
+        let pending = _.get(results, 'files.length');
 
         if(!pending) {
-            done();
+            return done();
         }
 
         if(!_.isString(root)) {
