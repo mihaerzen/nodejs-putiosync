@@ -48,8 +48,7 @@ const remove = (results, root) => {
                     try {
                         return path.join(res.path, res.file.name) === filePath;
                     } catch (e) {
-                        log.error('error while removing', res, results, filePath);
-                        throw e;
+                        return log.error('error while removing', res, results, filePath);
                     }
 
                 }), 'file.name');
@@ -63,13 +62,14 @@ const remove = (results, root) => {
     });
 };
 
+const scheduleRun = function(cb) {
+    return setTimeout(()=>fetchList(client, {id: program.source}, cb), 3000);
+};
+
 const done = (err, results, root) => {
     if(err) {
-        throw err;
-    }
-
-    if(err) {
-        throw err;
+        log.error(err);
+        scheduleRun(done);
     }
 
     log.info('Sync job triggered');
@@ -83,7 +83,7 @@ const done = (err, results, root) => {
         q.process();
     } else {
         log.info('Nothing new ... waiting 3 sec before trying again.');
-        setTimeout(()=>fetchList(client, {id: program.source}, done), 3000);
+        scheduleRun(done);
     }
 };
 
