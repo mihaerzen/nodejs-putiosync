@@ -20,6 +20,8 @@ module.exports = function(downloader, port) {
                 'ETA ' + Downloader.Formatters.remainingTime(download.stats.future.eta) + '\n';
         });
 
+        results = results || 'Idling...';
+
         response.end(results);
     });
 
