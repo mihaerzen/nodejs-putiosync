@@ -73,6 +73,9 @@ module.exports = function(client, destination, downloader) {
 
                                 download.start();
                             }
+                        } else {
+                            log.warn('Non OK response [%s]', res.statusCode, task.file);
+                            cb(new Error('Non OK response [' + res.statusCode + ']'));
                         }
                     });
                 } else {
