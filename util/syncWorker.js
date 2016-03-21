@@ -15,7 +15,7 @@ module.exports = function(client, destination, downloader) {
 
         const saveDir = destination + '/' + task.path;
 
-        mkdirp(saveDir, function(err) {
+        mkdirp(saveDir, err => {
             if(err) throw err;
 
             const destination = saveDir + '/' + task.file.name;
@@ -32,9 +32,9 @@ module.exports = function(client, destination, downloader) {
 
             fs.stat(destination, function(err, stat) {
                 if((err && err.code === 'ENOENT') || stat.size !== task.file.size) {
-                    const download = client.file.download({file_id: task.file.id});
+                    const d = client.file.download({file_id: task.file.id});
 
-                    download.on('response', (res) => {
+                    d.on('response', res => {
                         if(res.statusCode === 302) {
                             const source = _.get(res, 'headers.location');
 
@@ -52,10 +52,20 @@ module.exports = function(client, destination, downloader) {
                                     download = downloader.download(source, destination, downloadOptions);
                                 }
 
-                                download.on('end', cb);
+                                download.on('end', () => cb());
+
+                                download.on('error', err => {
+                                    if(_.get(err,'error.message') === 'The .mtd file is corrupt. Start a new download.') {
+                                        download.destroy();
+                                        log.error('Could not resume download for [%s].', task.file.name);
+                                    }
+
+                                    cb(err.error);
+                                });
+
                                 download.setOptions(downloadOptions);
 
-                                let timer = setInterval(()=>{
+                                let timer = setInterval(() => {
                                     if(download.status === 1) {
                                         let stats = download.getStats();
 
@@ -63,7 +73,8 @@ module.exports = function(client, destination, downloader) {
                                             Downloader.Formatters.speed(stats.present.speed),
                                             stats.total.completed,
                                             Downloader.Formatters.remainingTime(stats.future.eta));
-                                    } else if (download.status === -1 ||
+                                    } else if (
+                                        download.status === -1 ||
                                         download.status === 3 ||
                                         download.status === -3) {
 

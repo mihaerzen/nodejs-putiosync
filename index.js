@@ -79,7 +79,9 @@ const done = (err, results, root) => {
     }
 
     if(_.isArray(results) && results.length > 0) {
-        results.forEach((res) => q.push(res));
+        results.forEach((res) => q.push(res, err => {
+            if(err) log.error(err);
+        }));
         q.process();
     } else {
         log.info('Nothing new ... waiting 3 sec before trying again.');
