@@ -44,14 +44,13 @@ const remove = (results, root) => {
             files.map((file) => {
                 let filePath = path.relative(program.destination, file);
 
-                let isThere = _.result(_.find(results, (res) => {
+                let isThere = _.chain(results).reject(_.isUndefined).find((res) => {
                     try {
                         return path.join(res.path, res.file.name) === filePath;
                     } catch (e) {
                         return log.error('error while removing', res, results, filePath);
                     }
-
-                }), 'file.name');
+                }, 'file.name').value();
 
                 if(!isThere) {
                     log.warn('File removed from remote [%s] will be removed also locally!', file);
