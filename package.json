@@ -13,11 +13,11 @@
   "author": "Alexandru Savin",
   "license": "ISC",
   "dependencies": {
-    "async": "^1.5.0",
+    "async": "^2.0.0-rc.2",
     "bunyan": "^1.5.1",
     "co": "^4.6.0",
     "commander": "^2.9.0",
-    "lodash": "^3.10.1",
+    "lodash": "^4.6.1",
     "mkdirp": "^0.5.1",
     "mt-files-downloader": "^0.2.5",
     "named-routes": "^2.0.2",
@@ -30,6 +30,6 @@
   "devDependencies": {
     "chai": "^3.4.1",
     "mocha": "^2.3.4",
-    "nock": "^3.4.0"
+    "nock": "^7.7.1"
   }
 }
