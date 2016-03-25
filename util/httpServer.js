@@ -11,18 +11,28 @@ module.exports = function(downloader, port) {
     const server = http.createServer(function(request, response) {
         let downloads = downloader.getDownloads();
 
-        let results = '';
+        if(downloads.length === 0) {
+            return response.end('Idling...');
+        }
+
+        let finished = [];
+        let downloading = '';
 
         downloads.forEach((download) => {
-            results += '# ' + path.basename(download.filePath) + ' - ' +
-                'Speed: ' + Downloader.Formatters.speed(download.stats.present.speed) + ' - ' +
-                'Done: ' + download.stats.total.completed + '% - ' +
-                'ETA ' + Downloader.Formatters.remainingTime(download.stats.future.eta) + '\n';
+            switch(download.status) {
+                case 1:
+                    downloading = `# ${path.basename(download.filePath)}` +
+                        `\n\tSpeed: ${Downloader.Formatters.speed(download.stats.present.speed)}` +
+                        `\n\tDone: ${download.stats.total.completed}%` +
+                        `\n\tETA: ${Downloader.Formatters.remainingTime(download.stats.future.eta)}\n\n`;
+                    break;
+                case 3:
+                    finished.push(`#${path.basename(download.filePath)}`);
+                    break;
+            }
         });
 
-        results = results || 'Idling...';
-
-        response.end(results);
+        response.end(downloading + finished.join('\n'));
     });
 
     return () => {
