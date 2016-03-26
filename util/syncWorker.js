@@ -46,7 +46,7 @@ module.exports = function(client, destination, downloader) {
                                 let download;
 
                                 if(resume) {
-                                    log.info('Resuming [%s]...', _.trunc(task.file.name, 50));
+                                    log.info('Resuming [%s]...', _.truncate(task.file.name, 50));
                                     download = downloader.resumeDownload(destinationResume, downloadOptions);
                                 } else {
                                     download = downloader.download(source, destination, downloadOptions);
@@ -69,7 +69,7 @@ module.exports = function(client, destination, downloader) {
                                     if(download.status === 1) {
                                         let stats = download.getStats();
 
-                                        log.info(_.trunc(task.file.name, 50) + ' %s %s\% ETA: %s',
+                                        log.info(_.truncate(task.file.name, 50) + ' %s %s\% ETA: %s',
                                             Downloader.Formatters.speed(stats.present.speed),
                                             stats.total.completed,
                                             Downloader.Formatters.remainingTime(stats.future.eta));
