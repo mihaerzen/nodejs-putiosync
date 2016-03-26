@@ -17,6 +17,7 @@
     "bunyan": "^1.5.1",
     "co": "^4.6.0",
     "commander": "^2.9.0",
+    "heapdump": "^0.3.7",
     "lodash": "^4.6.1",
     "mkdirp": "^0.5.1",
     "mt-files-downloader": "^0.2.5",

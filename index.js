@@ -1,4 +1,19 @@
 'use strict';
+const log = require('./util/log');
+
+const memlog = log.child({type: 'memwatch'});
+
+const memwatch = require('memwatch-next');
+const heapdump = require('heapdump');
+
+memwatch.on('stats', function(stats) {
+    memlog.warn('stats', stats);
+});
+
+memwatch.on('leak', function(info) {
+    memlog.error('leak', info);
+    heapdump.writeSnapshot(`./${Date.now()}.heapsnapshot`);
+});
 
 const _ = require('lodash');
 const fs = require('fs');
@@ -17,7 +32,6 @@ program.version('0.0.0')
     .option('-p, --port [n]', 'Port to listen for http requests')
     .parse(process.argv);
 
-const log = require('./util/log');
 
 const Client = require('putiosdk');
 const client = new Client(program.token);
