@@ -24,7 +24,9 @@ const path = require('path');
 const Downloader = require('mt-files-downloader');
 const downloader = new Downloader();
 
-program.version('0.0.0')
+const version = require('./package.json').version;
+
+program.version(version)
     .option('--token <string>', 'Put.io token')
     .option('-s, --source <n>', 'Source folder ID.')
     .option('-d, --destination <string>', 'Destination directory')
