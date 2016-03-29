@@ -60,7 +60,8 @@ const remove = (results, root) => {
 
                 let isThere = _.chain(results).reject(_.isUndefined).find((res) => {
                     try {
-                        return path.join(res.path, res.file.name) === filePath;
+                        const comparePath = _.trimStart(path.join(res.path, res.file.name), '/');
+                        return comparePath === filePath;
                     } catch (e) {
                         return log.error('error while removing', res, results, filePath);
                     }
