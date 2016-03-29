@@ -14,6 +14,7 @@
   "license": "ISC",
   "dependencies": {
     "async": "^2.0.0-rc.2",
+    "bluebird": "^3.3.4",
     "bunyan": "^1.5.1",
     "co": "^4.6.0",
     "commander": "^2.9.0",

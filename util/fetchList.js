@@ -1,44 +1,63 @@
 'use strict';
 
 const _ = require('lodash');
+const async = require('async');
+const Promise = require('bluebird');
+const log = require('../util/log');
+
+const clientListAsync = (client, parent_id) => new Promise((resolve, reject) => {
+    client.file.list({parent_id}, function (err, results) {
+        if (err) {
+            return reject(err);
+        }
+
+        resolve(results);
+    });
+});
 
 module.exports = function fetchList (client, folder, root, done) {
-    let filesToDownload = [];
-    client.file.list({parent_id: folder.id}, function(err, results) {
-        if(typeof root === 'function') {
-            done = root;
-        }
+    if(typeof root === 'function') {
+        done = root;
+        root = '';
+    }
 
-        if(err) {
-            return done(err);
-        }
+    if(!_.isArray(folder.id)) {
+        folder.id = [folder.id];
+    }
 
-        let pending = _.get(results, 'files.length');
+    const resultsAsync = Promise.all(folder.id.map(id => clientListAsync(client, id)));
 
-        if(!pending) {
-            return done();
-        }
+    resultsAsync.done(function(results) {
+        const files = _.chain(results)
+            .map(item => {
+                return _.map(item.files, file => {
+                    file.parent_name = root + '/' + item.parent.name;
+                    return file;
+                });
+            })
+            .flatten()
+            .value();
 
-        if(!_.isString(root)) {
-            root = results.parent.name;
-        }
+        async.reduce(files, [], (filesToDownload, file, cb) => {
+            log.debug('indexing...', `${file.parent_name}/${file.name}`);
 
-        results.files.forEach((file) => {
             if(file.content_type === 'application/x-directory') {
-                fetchList(client, file, root + '/' + file.name, function(err, res) {
-                    if(err) done(err);
+                fetchList(client, file, file.parent_name, function(err, res) {
+                    if(err) {
+                        cb(err);
+                    }
                     filesToDownload = filesToDownload.concat(res);
-                    if (!--pending)
-                        done(null, filesToDownload, root);
+                    cb(null, filesToDownload);
                 });
             } else {
                 filesToDownload.push({
                     file: file,
-                    path: root
+                    path: file.parent_name
                 });
-                if (!--pending)
-                    done(null, filesToDownload, root);
+                cb(null, filesToDownload);
             }
+        }, (err, filesToDownload) => {
+            done(null, filesToDownload, root);
         });
-    });
+    }, err => done(err));
 };
