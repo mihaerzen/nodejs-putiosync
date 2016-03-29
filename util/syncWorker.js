@@ -32,9 +32,13 @@ module.exports = function(client, destination, downloader) {
 
             fs.stat(destination, function(err, stat) {
                 if((err && err.code === 'ENOENT') || stat.size !== task.file.size) {
-                    const d = client.file.download({file_id: task.file.id});
+                    const downloadRequest = client.file.download({file_id: task.file.id});
 
-                    d.on('response', res => {
+                    const downloadRequestTimeout = setTimeout(() => cb(new Error('Server timeout')), 5000);
+
+                    downloadRequest.on('response', res => {
+                        clearTimeout(downloadRequestTimeout);
+
                         if(res.statusCode === 302) {
                             const source = _.get(res, 'headers.location');
 
@@ -55,7 +59,9 @@ module.exports = function(client, destination, downloader) {
                                 download.on('end', () => cb());
 
                                 download.on('error', err => {
-                                    if(_.get(err,'error.message') === 'The .mtd file is corrupt. Start a new download.') {
+                                    if(_.get(err,'error.message') ===
+                                        'The .mtd file is corrupt. Start a new download.') {
+
                                         download.destroy();
                                         log.error('Could not resume download for [%s].', task.file.name);
                                     }
