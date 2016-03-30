@@ -21,8 +21,7 @@ const async = require('async');
 const program = require('commander');
 const recursive = require('recursive-readdir');
 const path = require('path');
-const Downloader = require('mt-files-downloader');
-const downloader = new Downloader();
+const mtd = require('mt-downloader');
 
 const version = require('./package.json').version;
 
@@ -37,9 +36,10 @@ program.version(version)
 
 const Client = require('putiosdk');
 const client = new Client(program.token);
+const downloader = mtd.createDownload;
 
 // Start the http server
-const startServer = require('./util/httpServer')(downloader, program.port || 3000);
+const startServer = require('./util/httpServer')(program.port || 3000);
 
 
 const fetchList = require('./util/fetchList');
@@ -112,4 +112,8 @@ q.drain = ()=>setTimeout(
 fetchList(client, {id: program.source}, (err, results, root) => {
     done(err, results, root);
     startServer();
+});
+
+process.on('uncaughtException', function(err) {
+    log.error(err);
 });

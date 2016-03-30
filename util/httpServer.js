@@ -2,41 +2,28 @@
 
 const http = require('http');
 const path = require('path');
-const Downloader = require('mt-files-downloader');
+const _ = require('lodash');
+const computeStats = require('./computeStats');
 
 const log = require('./log');
 
 module.exports = function(downloader, port) {
 
     const server = http.createServer(function(request, response) {
-        let downloads = downloader.getDownloads();
-
-        if(downloads.length === 0) {
-            return response.end('Idling...');
-        }
-
-        let finished = [];
         let downloading = '';
 
-        downloads.forEach((download) => {
-            switch(download.status) {
-                case 1:
-                    downloading = `# ${path.basename(download.filePath)}` +
-                        `\n\tSpeed: ${Downloader.Formatters.speed(download.stats.present.speed)}` +
-                        `\n\tDone: ${download.stats.total.completed}%` +
-                        `\n\tETA: ${Downloader.Formatters.remainingTime(download.stats.future.eta)}\n\n`;
-                    break;
-                case 3:
-                    finished.push(`#${path.basename(download.filePath)}`);
-                    break;
-            }
-        });
-
-        response.end(downloading + finished.join('\n'));
+        if(!_.isEmpty(computeStats.stats)) {
+            downloading = `# ${path.basename(computeStats.stats.file.name)}` +
+                `\n\tSpeed: ${computeStats.formatters.speed(computeStats.stats.speed || 0)}` +
+                `\n\tDone: ${Math.round(100 * computeStats.stats.bytes / computeStats.stats.totalBytes || 0)}%` +
+                `\n\tETA: ${computeStats.formatters.remainingTime((computeStats.stats.totalBytes - computeStats.stats.bytes) / computeStats.stats.speed)}\n\n`;
+        }
+        
+        response.end(downloading);
     });
 
     return () => {
-        return server.listen(port, function(){
+        return server.listen(port || 3000, function(){
             //Callback triggered when server is successfully listening. Hurray!
             log.warn("Server listening on: http://localhost:%s", port);
         });

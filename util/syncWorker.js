@@ -1,105 +1,106 @@
 'use strict';
 
 const _ = require('lodash');
+const BBPromise = require('bluebird');
 const fs = require('fs');
-const mkdirp = require('mkdirp');
-const Downloader = require('mt-files-downloader');
+const path = require('path');
+
+const computeStats = require('./computeStats').computeStats;
+
+BBPromise.promisifyAll(fs);
+const mkdirp = BBPromise.promisify(require('mkdirp'));
 
 const log = require('./log');
 
+function getDownloadSourceUrl(client, file_id) {
+    const downloadRequest = client.file.download({file_id});
+
+    return new BBPromise((resolve, reject) => {
+        const downloadRequestTimeout =
+            setTimeout(() => reject(new Error('Server timeout')), 5000);
+
+        downloadRequest.on('response', res => {
+            clearTimeout(downloadRequestTimeout);
+
+            if(res.statusCode !== 302) {
+                reject(new Error('Non OK response [' + res.statusCode + ']'));
+            }
+
+            const source = _.get(res, 'headers.location');
+
+            if(!source || _.isEmpty(source)) {
+                reject(new Error('Could not get source url.'));
+            }
+
+            resolve(source);
+        });
+    });
+}
+
+function* shouldResume(filePath) {
+    try {
+        return Boolean(yield fs.statAsync(filePath));
+    } catch(err) {
+        return false;
+    }
+}
+
 module.exports = function(client, destination, downloader) {
-    return (task, cb) => {
+    return BBPromise.coroutine(function* (task, cb) {
         if(!task) {
             return cb();
         }
 
-        const saveDir = destination + '/' + task.path;
+        const saveDir = path.join(destination, task.path);
 
-        mkdirp(saveDir, err => {
-            if(err) throw err;
+        yield mkdirp(saveDir);
 
-            const destination = saveDir + '/' + task.file.name;
-            const destinationResume = destination + '.mtd';
+        const destinationFileName = path.join(saveDir, task.file.name);
+        const destinationResume = destinationFileName + '.mtd';
 
-            let resume = false;
+        try {
+            const destinationStat = yield fs.statAsync(destinationFileName);
 
-            try {
-                resume = fs.statSync(destinationResume);
-            } catch(err) {
-                //nothing to do
+            if(destinationStat.size === task.file.size) {
+                log.info('File exists. Skipping [%s]', task.file.name);
+                return cb();
             }
+        } catch(err) {
+            if(err.code !== 'ENOENT') {
+                return cb(err);
+            }
+        }
 
+        let source;
+        try {
+            source = yield getDownloadSourceUrl(client, task.file.id);
+        } catch(err) {
+            return cb(err);
+        }
 
-            fs.stat(destination, function(err, stat) {
-                if((err && err.code === 'ENOENT') || stat.size !== task.file.size) {
-                    const downloadRequest = client.file.download({file_id: task.file.id});
+        let download;
 
-                    const downloadRequestTimeout = setTimeout(() => cb(new Error('Server timeout')), 5000);
+        const resume = yield* shouldResume(destinationResume);
+        let start;
 
-                    downloadRequest.on('response', res => {
-                        clearTimeout(downloadRequestTimeout);
+        if(resume) {
+            log.info('Resuming [%s]...', _.truncate(task.file.name, 50));
+            const trimmedPath =  _.trimEnd(destinationResume, '.mtd');
+            download = downloader({path: trimmedPath, url: source, range: 5});
+            start = () => download.download().toPromise();
+        } else {
+            download = downloader({path: destinationFileName, url: source, range: 5});
+            start = () => download.start().toPromise();
+        }
 
-                        if(res.statusCode === 302) {
-                            const source = _.get(res, 'headers.location');
+        download.stats.subscribe(computeStats(task));
 
-                            if(source) {
-                                const downloadOptions = {
-                                    threadsCount: 5
-                                };
+        try {
+            yield start();
+        } catch (err) {
+            return cb(err);
+        }
 
-                                let download;
-
-                                if(resume) {
-                                    log.info('Resuming [%s]...', _.truncate(task.file.name, 50));
-                                    download = downloader.resumeDownload(destinationResume, downloadOptions);
-                                } else {
-                                    download = downloader.download(source, destination, downloadOptions);
-                                }
-
-                                download.on('end', () => cb());
-
-                                download.on('error', err => {
-                                    if(_.get(err,'error.message') ===
-                                        'The .mtd file is corrupt. Start a new download.') {
-
-                                        download.destroy();
-                                        log.error('Could not resume download for [%s].', task.file.name);
-                                    }
-
-                                    cb(err.error);
-                                });
-
-                                download.setOptions(downloadOptions);
-
-                                let timer = setInterval(() => {
-                                    if(download.status === 1) {
-                                        let stats = download.getStats();
-
-                                        log.info(_.truncate(task.file.name, 50) + ' %s %s\% ETA: %s',
-                                            Downloader.Formatters.speed(stats.present.speed),
-                                            stats.total.completed,
-                                            Downloader.Formatters.remainingTime(stats.future.eta));
-                                    } else if (
-                                        download.status === -1 ||
-                                        download.status === 3 ||
-                                        download.status === -3) {
-
-                                        clearInterval(timer);
-                                    }
-                                }, 3000);
-
-                                download.start();
-                            }
-                        } else {
-                            log.warn('Non OK response [%s]', res.statusCode, task.file);
-                            cb(new Error('Non OK response [' + res.statusCode + ']'));
-                        }
-                    });
-                } else {
-                    log.info('File exists. Skipping [%s]', task.file.name);
-                    cb();
-                }
-            });
-        });
-    };
+        cb();
+    });
 };
