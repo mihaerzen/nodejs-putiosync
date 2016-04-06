@@ -13,7 +13,7 @@ const mkdirp = BBPromise.promisify(require('mkdirp'));
 const log = require('./log');
 
 function getDownloadSourceUrl(client, file_id) {
-    const downloadRequest = client.file.download({file_id});
+    const downloadRequest = client.file.download({file_id}, {followRedirect: false});
 
     return new BBPromise((resolve, reject) => {
         const downloadRequestTimeout =
