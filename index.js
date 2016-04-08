@@ -111,8 +111,9 @@ q.drain = ()=>setTimeout(
 
 fetchList(client, {id: program.source}, (err, results, root) => {
     done(err, results, root);
-    startServer();
 });
+
+startServer();
 
 process.on('uncaughtException', function(err) {
     log.error(err);
