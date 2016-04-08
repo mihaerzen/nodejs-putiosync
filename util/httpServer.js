@@ -18,7 +18,7 @@ module.exports = function(downloader, port) {
                 `\n\tDone: ${Math.round(100 * computeStats.stats.bytes / computeStats.stats.totalBytes || 0)}%` +
                 `\n\tETA: ${computeStats.formatters.remainingTime((computeStats.stats.totalBytes - computeStats.stats.bytes) / computeStats.stats.speed)}\n\n`;
         } else {
-            downloading = 'Idling...';
+            downloading = 'Waiting...';
         }
         
         response.end(downloading);
