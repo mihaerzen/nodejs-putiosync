@@ -21,8 +21,12 @@ function computeStats(task) {
                 stats.totalBytes = event.message.totalBytes;
                 stats.bytes = _.sum(_.map(offsets, (o, i) => o - threads[i][0]));
 
+                if(_.isNaN(stats.bytesPrev) || !stats.bytesPrev) {
+                    stats.bytesPrev = stats.bytes;
+                }
+
                 const currentTime = Math.floor(Date.now() / 1000) - stats.startTime;
-                stats.speed = stats.bytes / currentTime;
+                stats.speed = (stats.bytes - stats.bytesPrev) / currentTime;
                 break;
 
             case 'TRUNCATE':
