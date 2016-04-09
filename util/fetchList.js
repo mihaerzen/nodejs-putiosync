@@ -44,7 +44,7 @@ module.exports = function fetchList (client, folder, root, done) {
             if(file.content_type === 'application/x-directory') {
                 fetchList(client, file, file.parent_name, function(err, res) {
                     if(err) {
-                        cb(err);
+                        return cb(err);
                     }
                     filesToDownload = filesToDownload.concat(res);
                     cb(null, filesToDownload);
