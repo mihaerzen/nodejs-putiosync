@@ -11,15 +11,24 @@ module.exports = function(downloader, port) {
 
     const server = http.createServer(function(request, response) {
         let downloading = '';
+        const stats = _.cloneDeep(computeStats.stats);
+        const current = _.isArray(stats) && stats.pop();
 
-        if(!_.isEmpty(computeStats.stats)) {
-            downloading = `# ${path.basename(computeStats.stats.file.name)}` +
-                `\n\tSpeed: ${computeStats.formatters.speed(computeStats.stats.speed || 0)}` +
-                `\n\tDone: ${Math.round(100 * computeStats.stats.bytes / computeStats.stats.totalBytes || 0)}%` +
-                `\n\tETA: ${computeStats.formatters.remainingTime((computeStats.stats.totalBytes - computeStats.stats.bytes) / computeStats.stats.speed)}\n\n`;
+        const done = current && Math.round(100 * current.bytes / current.totalBytes || 0);
+
+        if(current && current.active) {
+            downloading = `# ${path.basename(current.file.name)}` +
+                `\n\tSpeed: ${computeStats.formatters.speed(current.speed || 0)}` +
+                `\n\tDone: ${computeStats.formatters.size(current.bytes)} (${done}%)` +
+                `\n\tETA: ${computeStats.formatters.remainingTime(
+                    (current.totalBytes - current.bytes) / current.speed)}\n\n`;
         } else {
-            downloading = 'Waiting...';
+            downloading += 'Waiting...\n\n';
         }
+
+        _.forEach(stats, dw => {
+            downloading += `# ${path.basename(dw.file.name)} ${dw.totalBytes}\n`;
+        });
         
         response.end(downloading);
     });
