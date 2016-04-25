@@ -51,7 +51,7 @@ const Formatters = {
 
     size: function(size) {
         if (size > Math.pow(1024, 3))
-            return Math.floor(size / Math.pow(1024, 3)) + ' GB';
+            return (Math.round(100 * size / Math.pow(1024, 3)) / 100) + ' GB';
         else if (size > Math.pow(1024, 2))
             return Math.floor(size / Math.pow(1024, 2)) + ' MB';
         else if (size > 1024)
