@@ -13,27 +13,27 @@
   "author": "Alexandru Savin",
   "license": "ISC",
   "dependencies": {
-    "async": "^2.0.0-rc.2",
-    "bluebird": "^3.3.4",
-    "bunyan": "^1.5.1",
+    "async": "^2.0.0-rc.3",
+    "bluebird": "^3.3.5",
+    "bunyan": "^1.8.1",
     "co": "^4.6.0",
     "commander": "^2.9.0",
     "heapdump": "^0.3.7",
-    "lodash": "^4.6.1",
+    "lodash": "^4.11.1",
     "memwatch-next": "^0.2.10",
     "mkdirp": "^0.5.1",
-    "moment": "^2.12.0",
+    "moment": "^2.13.0",
     "mt-downloader": "^1.4.1",
-    "named-routes": "^2.0.2",
+    "named-routes": "^2.0.5",
     "progress": "^1.1.8",
     "progress-stream": "^1.2.0",
     "putiosdk": "^0.1.2",
     "recursive-readdir": "^2.0.0",
-    "request": "^2.67.0"
+    "request": "^2.72.0"
   },
   "devDependencies": {
-    "chai": "^3.4.1",
-    "mocha": "^2.3.4",
+    "chai": "^3.5.0",
+    "mocha": "^2.4.5",
     "nock": "^8.0.0"
   }
 }
