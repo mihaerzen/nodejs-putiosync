@@ -22,13 +22,13 @@ function getDownloadSourceUrl(client, file_id) {
         downloadRequest.on('response', res => {
             clearTimeout(downloadRequestTimeout);
 
-            if(res.statusCode !== 302) {
+            if (res.statusCode !== 302) {
                 reject(new Error('Non OK response [' + res.statusCode + ']'));
             }
 
             const source = _.get(res, 'headers.location');
 
-            if(!source || _.isEmpty(source)) {
+            if (!source || _.isEmpty(source)) {
                 reject(new Error('Could not get source url.'));
             }
 
@@ -40,7 +40,7 @@ function getDownloadSourceUrl(client, file_id) {
 function* shouldResume(filePath) {
     try {
         return Boolean(yield fs.statAsync(filePath));
-    } catch(err) {
+    } catch (err) {
         return false;
     }
 }
@@ -61,12 +61,12 @@ module.exports = function (client, destination, downloader) {
         try {
             const destinationStat = await fs.statAsync(destinationFileName);
 
-            if(destinationStat.size === task.file.size) {
+            if (destinationStat.size === task.file.size) {
                 log.info('File exists. Skipping [%s]', task.file.name);
                 return cb();
             }
-        } catch(err) {
-            if(err.code !== 'ENOENT') {
+        } catch (err) {
+            if (err.code !== 'ENOENT') {
                 return cb(err);
             }
         }
@@ -74,7 +74,7 @@ module.exports = function (client, destination, downloader) {
         let source;
         try {
             source = await getDownloadSourceUrl(client, task.file.id);
-        } catch(err) {
+        } catch (err) {
             return cb(err);
         }
 
@@ -83,9 +83,9 @@ module.exports = function (client, destination, downloader) {
         const resume = await shouldResume(destinationResume);
         let start;
 
-        if(resume) {
+        if (resume) {
             log.info('Resuming [%s]...', _.truncate(task.file.name, 50));
-            const trimmedPath =  _.trimEnd(destinationResume, '.mtd');
+            const trimmedPath = _.trimEnd(destinationResume, '.mtd');
             download = downloader({path: trimmedPath, url: source, range: 5});
             start = () => download.download().toPromise();
         } else {

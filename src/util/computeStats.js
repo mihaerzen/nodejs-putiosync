@@ -11,7 +11,7 @@ function computeStats(task) {
     stats.push(thisStats);
 
     return event => {
-        switch(event.event) {
+        switch (event.event) {
             case 'INIT':
                 thisStats.active = true;
                 thisStats.startTime = Math.floor(Date.now() / 1000);
@@ -24,7 +24,7 @@ function computeStats(task) {
                 thisStats.totalBytes = event.message.totalBytes;
                 thisStats.bytes = _.sum(_.map(offsets, (o, i) => o - threads[i][0]));
 
-                if(_.isNaN(thisStats.bytesPrev) || !thisStats.bytesPrev) {
+                if (_.isNaN(thisStats.bytesPrev) || !thisStats.bytesPrev) {
                     thisStats.bytesPrev = thisStats.bytes;
                 }
 
@@ -40,33 +40,32 @@ function computeStats(task) {
 }
 
 const Formatters = {
-    speed: function(speed) {
+    speed: speed => {
         let str;
-        speed *= 8;
-        if (speed > 1024 * 1024) str = Math.floor(speed * 10 / (1024 * 1024)) / 10 + ' Mbps';
-        else if (speed > 1024) str = Math.floor(speed * 10 / 1024) / 10 + ' Kbps';
-        else str = Math.floor(speed) + ' bps';
-        return str + '';
+        let formattedSpeed = speed * 8;
+        if (formattedSpeed > 1024 * 1024) {
+            str = Math.floor(formattedSpeed * 10 / (1024 * 1024)) / 10 + ' Mbps';
+        } else if (formattedSpeed > 1024) {
+            str = Math.floor(formattedSpeed * 10 / 1024) / 10 + ' Kbps';
+        } else {
+            str = Math.floor(formattedSpeed) + ' bps';
+        }
+        return String(str);
     },
 
-    size: function(size) {
-        if (size > Math.pow(1024, 3))
+    size: size => {
+        if (size > Math.pow(1024, 3)) {
             return (Math.round(100 * size / Math.pow(1024, 3)) / 100) + ' GB';
-        else if (size > Math.pow(1024, 2))
+        } else if (size > Math.pow(1024, 2)) {
             return Math.floor(size / Math.pow(1024, 2)) + ' MB';
-        else if (size > 1024)
+        } else if (size > 1024) {
             return Math.floor(size / 1024) + ' KB';
-        else
-            return Math.floor(size) + ' B';
+        }
+
+        return Math.floor(size) + ' B';
     },
 
-    // elapsedTime: function(seconds) {
-    //     return _floor(seconds) + 's';
-    // },
-    //
-    remainingTime: function(seconds) {
-        return moment.duration(seconds, 'seconds').humanize();
-    }
+    remainingTime: seconds => moment.duration(seconds, 'seconds').humanize()
 };
 
 

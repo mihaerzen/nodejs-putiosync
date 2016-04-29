@@ -15,19 +15,19 @@ const clientListAsync = (client, parent_id) => new Promise((resolve, reject) => 
     });
 });
 
-module.exports = function fetchList (client, folder, root, done) {
-    if(typeof root === 'function') {
+module.exports = function fetchList(client, folder, root, done) {
+    if (typeof root === 'function') {
         done = root;
         root = '';
     }
 
-    if(!_.isArray(folder.id)) {
+    if (!_.isArray(folder.id)) {
         folder.id = [folder.id];
     }
 
     const resultsAsync = Promise.all(folder.id.map(id => clientListAsync(client, id)));
 
-    resultsAsync.done(function(results) {
+    resultsAsync.done(function (results) {
         const files = _.chain(results)
             .map(item => {
                 return _.map(item.files, file => {
@@ -41,21 +41,23 @@ module.exports = function fetchList (client, folder, root, done) {
         async.reduce(files, [], (filesToDownload, file, cb) => {
             log.debug('indexing...', `${file.parent_name}/${file.name}`);
 
-            if(file.content_type === 'application/x-directory') {
-                fetchList(client, file, file.parent_name, function(err, res) {
-                    if(err) {
+            if (file.content_type === 'application/x-directory') {
+                fetchList(client, file, file.parent_name, function (err, res) {
+                    if (err) {
                         return cb(err);
                     }
                     filesToDownload = filesToDownload.concat(res);
-                    cb(null, filesToDownload);
+
+                    return cb(null, filesToDownload);
                 });
-            } else {
-                filesToDownload.push({
-                    file: file,
-                    path: file.parent_name
-                });
-                cb(null, filesToDownload);
             }
+
+            filesToDownload.push({
+                file,
+                path: file.parent_name
+            });
+
+            return cb(null, filesToDownload);
         }, (err, filesToDownload) => {
             done(null, filesToDownload, root);
         });
