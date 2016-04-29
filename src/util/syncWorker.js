@@ -15,7 +15,7 @@ const log = require('./log');
 function getDownloadSourceUrl(client, file_id) {
     const downloadRequest = client.file.download({file_id}, {followRedirect: false});
 
-    return new BBPromise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
         const downloadRequestTimeout =
             setTimeout(() => reject(new Error('Server timeout')), 5000);
 
@@ -45,21 +45,21 @@ function* shouldResume(filePath) {
     }
 }
 
-module.exports = function(client, destination, downloader) {
-    return BBPromise.coroutine(function* (task, cb) {
-        if(!task) {
+module.exports = function (client, destination, downloader) {
+    return async (task, cb) => {
+        if (!task) {
             return cb();
         }
 
         const saveDir = path.join(destination, task.path);
 
-        yield mkdirp(saveDir);
+        await mkdirp(saveDir);
 
         const destinationFileName = path.join(saveDir, task.file.name);
         const destinationResume = destinationFileName + '.mtd';
 
         try {
-            const destinationStat = yield fs.statAsync(destinationFileName);
+            const destinationStat = await fs.statAsync(destinationFileName);
 
             if(destinationStat.size === task.file.size) {
                 log.info('File exists. Skipping [%s]', task.file.name);
@@ -73,14 +73,14 @@ module.exports = function(client, destination, downloader) {
 
         let source;
         try {
-            source = yield getDownloadSourceUrl(client, task.file.id);
+            source = await getDownloadSourceUrl(client, task.file.id);
         } catch(err) {
             return cb(err);
         }
 
         let download;
 
-        const resume = yield* shouldResume(destinationResume);
+        const resume = await shouldResume(destinationResume);
         let start;
 
         if(resume) {
@@ -96,11 +96,11 @@ module.exports = function(client, destination, downloader) {
         download.stats.subscribe(computeStats(task));
 
         try {
-            yield start();
+            await start();
         } catch (err) {
             return cb(err);
         }
 
         cb();
-    });
+    };
 };

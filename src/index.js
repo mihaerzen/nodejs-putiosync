@@ -1,20 +1,6 @@
 'use strict';
 const log = require('./util/log');
 
-const memlog = log.child({type: 'memwatch'});
-
-const memwatch = require('memwatch-next');
-const heapdump = require('heapdump');
-
-memwatch.on('stats', function(stats) {
-    memlog.warn('stats', stats);
-});
-
-memwatch.on('leak', function(info) {
-    memlog.error('leak', info);
-    heapdump.writeSnapshot(`./${Date.now()}.heapsnapshot`);
-});
-
 const _ = require('lodash');
 const fs = require('fs');
 const async = require('async');
@@ -23,7 +9,7 @@ const recursive = require('recursive-readdir');
 const path = require('path');
 const mtd = require('mt-downloader');
 
-const version = require('./package.json').version;
+const version = require('../package.json').version;
 
 program.version(version)
     .option('--token <string>', 'Put.io token')
